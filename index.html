@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Flores Amarillas · Una sorpresa para ti</title>
+<meta name="description" content="Abre una tarjeta floral vintage, mira cómo la pantalla se llena de flores y recibe un ramo de flores amarillas con una dedicatoria personalizada para el Día de las Flores Amarillas." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BC%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="bg-decor" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Pantalla 0: bienvenida / nombre -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome-card">
+        <h1 class="script-title">Para ti, con cariño</h1>
+        <p>Antes de abrir tu sorpresa, cuéntame cómo te llamas.</p>
+        <label for="nameInput" class="sr-only">Tu nombre</label>
+        <input id="nameInput" type="text" placeholder="Tu nombre (opcional)" maxlength="24" autocomplete="given-name" />
+        <button id="btnStart" class="btn-primary">Continuar ✿</button>
+      </div>
+    </section>
+
+    <!-- Pantalla 1: tarjeta vintage -->
+    <section id="screen-card" class="screen">
+      <div class="card-scene">
+        <button id="vintageCard" class="vintage-card" aria-label="Abrir tarjeta floral">
+          <div class="card-frame">
+            <div class="card-illustration" id="cardIllustration" aria-hidden="true"></div>
+            <p class="card-title">Una sorpresa floral<br />te espera</p>
+            <p class="card-hint">Toca para abrir ✿</p>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Capa de explosión de flores (se llena entre la tarjeta y el ramo) -->
+    <div id="explosionLayer" class="explosion-layer" aria-hidden="true"></div>
+
+    <!-- Pantalla 2: ramo + dedicatoria + personalización -->
+    <section id="screen-bouquet" class="screen">
+      <button id="soundToggle" class="icon-btn" aria-label="Silenciar sonido">🔊</button>
+      <div class="bouquet-scene">
+        <p class="script-title" style="font-size:1.1rem;margin-bottom:2px;">Feliz Día de las Flores Amarillas<span id="greetingName"></span> 🌻</p>
+
+        <div id="bouquetContainer" class="bouquet-container" aria-label="Ramo de flores amarillas"></div>
+
+        <div class="dedication-box">
+          <p id="dedicationText" class="dedication-text"></p>
+          <button id="btnShuffle" class="btn-secondary">Otra dedicatoria ✿</button>
+        </div>
+
+        <div class="customizer">
+          <h2>Personaliza tu ramo</h2>
+          <div class="field-group">
+            <label>Tipo de flor</label>
+            <div id="flowerChoices" class="chip-group"></div>
+          </div>
+          <div class="field-group">
+            <label>Paleta de colores</label>
+            <div id="colorChoices" class="chip-group"></div>
+          </div>
+          <div class="actions">
+            <button id="btnDownload" class="btn-primary">Descargar tarjeta 🌼</button>
+            <button id="btnRestart" class="btn-secondary">Empezar de nuevo</button>
+          </div>
+        </div>
+
+        <p class="day-info">🌼 Cada <strong>21 de septiembre</strong> se celebra en Ecuador el <strong>Día de las Flores Amarillas</strong>, una tradición de origen ecuatoriano en la que se regalan flores amarillas a las amistades más queridas como símbolo de cariño y gratitud.</p>
+      </div>
+    </section>
+  </div>
+
+  <canvas id="exportCanvas" class="hidden-canvas" aria-hidden="true"></canvas>
+
+  <script src="js/flowers.js"></script>
+  <script src="js/dedications.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Ilustración decorativa de guirnalda en la tarjeta (usa el generador de flores.js)
+    document.addEventListener('DOMContentLoaded', function () {
+      var target = document.getElementById('cardIllustration');
+      if (!target || !window.Flowers) return;
+      var types = ['rosa', 'margarita', 'tulipan', 'lirio'];
+      var palettes = ['rosa', 'pastel', 'lavanda', 'durazno'];
+      var count = 8;
+      var radius = 78;
+      var markup = '';
+      for (var i = 0; i < count; i++) {
+        var angle = (Math.PI * 2 * i) / count - Math.PI / 2;
+        var cx = 110 + Math.cos(angle) * radius;
+        var cy = 100 + Math.sin(angle) * radius * 0.82;
+        var size = 40;
+        var type = types[i % types.length];
+        var palette = palettes[i % palettes.length];
+        var head = window.Flowers.flowerHeadSVG(type, palette).markup;
+        markup += '<svg x="' + (cx - size / 2) + '" y="' + (cy - size / 2) + '" width="' + size + '" height="' + size + '" viewBox="0 0 100 100">' + head + '</svg>';
+      }
+      var centerFlower = window.Flowers.flowerHeadSVG('girasol', 'amarillo').markup;
+      markup += '<svg x="76" y="66" width="68" height="68" viewBox="0 0 100 100">' + centerFlower + '</svg>';
+      target.innerHTML = '<svg viewBox="0 0 220 200" style="width:100%;height:auto;display:block;">' + markup + '</svg>';
+    });
+  </script>
+</body>
+</html>
