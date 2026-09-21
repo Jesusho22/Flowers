@@ -14,19 +14,8 @@
       <span></span><span></span><span></span><span></span><span></span>
     </div>
 
-    <!-- Pantalla 0: bienvenida / nombre -->
-    <section id="screen-welcome" class="screen active">
-      <div class="welcome-card">
-        <h1 class="script-title">Para ti, con cariño</h1>
-        <p>Antes de abrir tu sorpresa, cuéntame cómo te llamas.</p>
-        <label for="nameInput" class="sr-only">Tu nombre</label>
-        <input id="nameInput" type="text" placeholder="Tu nombre (opcional)" maxlength="24" autocomplete="given-name" />
-        <button id="btnStart" class="btn-primary">Continuar ✿</button>
-      </div>
-    </section>
-
-    <!-- Pantalla 1: tarjeta vintage -->
-    <section id="screen-card" class="screen">
+    <!-- Pantalla 1: tarjeta vintage (lo primero que se ve al abrir la app) -->
+    <section id="screen-card" class="screen active">
       <div class="card-scene">
         <button id="vintageCard" class="vintage-card" aria-label="Abrir tarjeta floral">
           <div class="card-frame">
@@ -37,6 +26,18 @@
         </button>
       </div>
     </section>
+
+    <!-- Ventana emergente de bienvenida / nombre, flotando sobre la tarjeta -->
+    <div id="welcomeOverlay" class="welcome-overlay">
+      <div class="welcome-card">
+        <h1 class="script-title">Para ti, con cariño</h1>
+        <p>Antes de abrir tu sorpresa, cuéntame cómo te llamas.</p>
+        <p id="rememberedHint" class="remembered-hint" hidden></p>
+        <label for="nameInput" class="sr-only">Tu nombre</label>
+        <input id="nameInput" type="text" placeholder="Tu nombre (opcional)" maxlength="24" autocomplete="given-name" />
+        <button id="btnStart" class="btn-primary">Continuar ✿</button>
+      </div>
+    </div>
 
     <!-- Capa de explosión de flores (se llena entre la tarjeta y el ramo) -->
     <div id="explosionLayer" class="explosion-layer" aria-hidden="true"></div>
@@ -66,6 +67,7 @@
           </div>
           <div class="actions">
             <button id="btnDownload" class="btn-primary">Descargar tarjeta 🌼</button>
+            <button id="btnShare" class="btn-secondary">Compartir 💌</button>
             <button id="btnRestart" class="btn-secondary">Empezar de nuevo</button>
           </div>
         </div>

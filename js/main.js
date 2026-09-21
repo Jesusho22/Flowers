@@ -18,10 +18,33 @@
   const audioEngine = new window.AmbientAudio();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  const PREFS_KEY = 'flores-amarillas-prefs-v1';
+
+  function loadPrefs() {
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function savePrefs() {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({
+        name: state.name,
+        type: state.type,
+        palette: state.palette
+      }));
+    } catch (e) {
+      /* almacenamiento no disponible: se continúa sin recordar preferencias */
+    }
+  }
+
   const el = {};
 
   function cacheEls() {
-    el.screenWelcome = document.getElementById('screen-welcome');
+    el.welcomeOverlay = document.getElementById('welcomeOverlay');
     el.screenCard = document.getElementById('screen-card');
     el.screenBouquet = document.getElementById('screen-bouquet');
     el.explosionLayer = document.getElementById('explosionLayer');
@@ -38,24 +61,46 @@
     el.soundToggle = document.getElementById('soundToggle');
     el.greetingName = document.getElementById('greetingName');
     el.exportCanvas = document.getElementById('exportCanvas');
+    el.btnShare = document.getElementById('btnShare');
+    el.rememberedHint = document.getElementById('rememberedHint');
   }
 
   function showScreen(screen) {
-    [el.screenWelcome, el.screenCard, el.screenBouquet].forEach((s) => {
+    [el.screenCard, el.screenBouquet].forEach((s) => {
       s.classList.toggle('active', s === screen);
     });
   }
 
-  /* ---------------- pantalla de bienvenida ---------------- */
+  /* ---------------- ventana emergente de bienvenida ---------------- */
 
   function initWelcome() {
-    el.btnStart.addEventListener('click', () => {
+    const prefs = loadPrefs();
+    if (prefs) {
+      if (prefs.name) {
+        el.nameInput.value = prefs.name;
+        state.name = prefs.name;
+      }
+      if (prefs.type && window.Flowers.FLOWER_TYPES[prefs.type]) state.type = prefs.type;
+      if (prefs.palette && window.Flowers.COLOR_PALETTES[prefs.palette]) state.palette = prefs.palette;
+      if (prefs.name && el.rememberedHint) {
+        el.rememberedHint.textContent = `Qué alegría verte de nuevo, ${prefs.name} ✿`;
+        el.rememberedHint.hidden = false;
+      }
+    }
+
+    function closeWelcome() {
       state.name = el.nameInput.value.trim();
-      showScreen(el.screenCard);
-    });
+      savePrefs();
+      el.welcomeOverlay.classList.add('closed');
+      setTimeout(() => { el.welcomeOverlay.style.display = 'none'; }, 500);
+    }
+
+    el.btnStart.addEventListener('click', closeWelcome);
     el.nameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') el.btnStart.click();
+      if (e.key === 'Enter') closeWelcome();
     });
+    // el nombre es opcional: el foco automático invita a escribirlo sin bloquear la vista de la tarjeta
+    setTimeout(() => el.nameInput.focus({ preventScroll: true }), 400);
   }
 
   /* ---------------- pantalla de la tarjeta ---------------- */
@@ -72,9 +117,33 @@
     const rect = el.vintageCard.getBoundingClientRect();
     const origin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 
+    spawnSparkleBurst(origin);
+
     setTimeout(() => {
       startExplosion(origin);
     }, 650);
+  }
+
+  function spawnSparkleBurst(origin) {
+    const layer = document.createElement('div');
+    layer.className = 'sparkle-layer';
+    document.body.appendChild(layer);
+    const count = reducedMotion ? 6 : 18;
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+      const dist = 55 + Math.random() * 95;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      const s = document.createElement('span');
+      s.className = 'sparkle';
+      s.style.left = `${origin.x}px`;
+      s.style.top = `${origin.y}px`;
+      s.style.setProperty('--dx', `${dx}px`);
+      s.style.setProperty('--dy', `${dy}px`);
+      s.style.animationDelay = `${Math.random() * 140}ms`;
+      layer.appendChild(s);
+    }
+    setTimeout(() => layer.remove(), 1500);
   }
 
   /* ---------------- explosión de flores ---------------- */
@@ -130,7 +199,13 @@
     wrap.className = 'explosion-flower';
     wrap.style.width = `${size}px`;
     wrap.style.height = `${size}px`;
-    wrap.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%">${svg}</svg>`;
+    // el balanceo vive en un hijo independiente para no chocar con la
+    // transformación de vuelo (posición/escala/rotación) del contenedor
+    wrap.innerHTML = `<span class="explosion-flower-sway"><svg viewBox="0 0 100 100" width="100%" height="100%">${svg}</svg></span>`;
+    if (!reducedMotion) {
+      wrap.style.setProperty('--sway-dur', `${2.8 + Math.random() * 2.2}s`);
+      wrap.style.setProperty('--sway-delay', `${Math.random() * 2}s`);
+    }
 
     const rot = Math.random() * 360;
     const startX = origin.x - size / 2;
@@ -203,11 +278,14 @@
   }
 
   function regenerateBouquet() {
-    el.bouquetContainer.classList.remove('pop-in');
+    el.bouquetContainer.classList.remove('pop-in', 'swaying');
     el.bouquetContainer.innerHTML = window.Flowers.buildBouquetSVG({ type: state.type, palette: state.palette });
     // fuerza reflow para reiniciar animación
     void el.bouquetContainer.offsetWidth;
     el.bouquetContainer.classList.add('pop-in');
+    if (!reducedMotion) {
+      setTimeout(() => el.bouquetContainer.classList.add('swaying'), 1150);
+    }
   }
 
   function showDedication() {
@@ -252,10 +330,12 @@
   function initCustomizer() {
     buildChips(el.flowerChoices, window.Flowers.FLOWER_TYPES, state.type, (key) => {
       state.type = key;
+      savePrefs();
       regenerateBouquet();
     });
     buildChips(el.colorChoices, window.Flowers.COLOR_PALETTES, state.palette, (key) => {
       state.palette = key;
+      savePrefs();
       regenerateBouquet();
     });
 
@@ -270,6 +350,37 @@
       el.soundToggle.setAttribute('aria-label', playing ? 'Silenciar sonido' : 'Activar sonido');
     });
     el.btnDownload.addEventListener('click', exportCard);
+    initShare();
+  }
+
+  /* ---------------- compartir nativo (Web Share API) ---------------- */
+
+  function initShare() {
+    if (!el.btnShare) return;
+    if (!navigator.share) {
+      el.btnShare.style.display = 'none';
+      return;
+    }
+    el.btnShare.addEventListener('click', shareCard);
+  }
+
+  async function shareCard() {
+    try {
+      const blob = await buildCardBlob();
+      const shareData = {
+        title: 'Feliz Día de las Flores Amarillas',
+        text: el.dedicationText.textContent || ''
+      };
+      if (blob && window.File && navigator.canShare) {
+        const file = new File([blob], 'tarjeta-flores-amarillas.png', { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          shareData.files = [file];
+        }
+      }
+      await navigator.share(shareData);
+    } catch (e) {
+      /* el usuario canceló el diálogo de compartir o no es compatible: no hacer nada */
+    }
   }
 
   /* ---------------- exportar tarjeta como imagen ---------------- */
@@ -295,9 +406,9 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  function exportCard() {
+  function buildCardSvgMarkup() {
     const bouquetSvgEl = el.bouquetContainer.querySelector('svg');
-    if (!bouquetSvgEl) return;
+    if (!bouquetSvgEl) return null;
     const bouquetInner = bouquetSvgEl.innerHTML;
 
     const title = state.name ? `Para ti, ${state.name}` : 'Para ti';
@@ -309,7 +420,7 @@
       .map((line, i) => `<tspan x="400" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`)
       .join('');
 
-    const svgMarkup = `
+    return `
       <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
         <defs>
           <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="1">
@@ -326,27 +437,44 @@
         <text x="400" y="950" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#C79A5F">21 de septiembre · Día de las Flores Amarillas</text>
       </svg>
     `;
+  }
 
-    const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = el.exportCanvas;
-      canvas.width = 800;
-      canvas.height = 1000;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, 800, 1000);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((pngBlob) => {
-        const link = document.createElement('a');
-        const safeName = (state.name || 'amiga').toLowerCase().replace(/[^a-z0-9ñáéíóúü]+/gi, '-');
-        link.download = `tarjeta-flores-amarillas-${safeName}.png`;
-        link.href = URL.createObjectURL(pngBlob);
-        link.click();
-      });
-    };
-    img.onerror = () => URL.revokeObjectURL(url);
-    img.src = url;
+  function buildCardBlob() {
+    return new Promise((resolve, reject) => {
+      const svgMarkup = buildCardSvgMarkup();
+      if (!svgMarkup) return reject(new Error('No hay ramo para exportar'));
+
+      const svgBlob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = el.exportCanvas;
+        canvas.width = 800;
+        canvas.height = 1000;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 800, 1000);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((pngBlob) => {
+          if (pngBlob) resolve(pngBlob);
+          else reject(new Error('No se pudo generar la imagen'));
+        });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('No se pudo cargar el SVG de la tarjeta'));
+      };
+      img.src = url;
+    });
+  }
+
+  function exportCard() {
+    buildCardBlob().then((pngBlob) => {
+      const link = document.createElement('a');
+      const safeName = (state.name || 'amiga').toLowerCase().replace(/[^a-z0-9ñáéíóúü]+/gi, '-');
+      link.download = `tarjeta-flores-amarillas-${safeName}.png`;
+      link.href = URL.createObjectURL(pngBlob);
+      link.click();
+    }).catch(() => { /* si falla la exportación, simplemente no se descarga nada */ });
   }
 
   /* ---------------- arranque ---------------- */
