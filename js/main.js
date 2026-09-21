@@ -303,17 +303,21 @@
 
     // punto de control perpendicular a la línea recta origen->destino, para
     // que cada flor dibuje un arco orgánico (con un pequeño impulso hacia
-    // arriba) en vez de volar en línea recta
+    // arriba) en vez de volar en línea recta. El viaje es corto a propósito:
+    // cuanto más tiempo pasa una flor "a medio camino" (pequeña, girando),
+    // más se nota como una forma incompleta en vez de una flor
     const dx = targetX - startX;
     const dy = targetY - startY;
     const dist = Math.hypot(dx, dy) || 1;
     const perpX = -dy / dist;
     const perpY = dx / dist;
-    const bow = (Math.random() - 0.5) * Math.min(220, dist * 0.9);
+    const bow = (Math.random() - 0.5) * Math.min(130, dist * 0.55);
     const midX = (startX + targetX) / 2 + perpX * bow;
-    const midY = (startY + targetY) / 2 + perpY * bow - 30 - Math.random() * 50;
+    const midY = (startY + targetY) / 2 + perpY * bow - 20 - Math.random() * 30;
 
-    const spins = (1 + Math.random() * 1.4) * (Math.random() > 0.5 ? 1 : -1);
+    // solo un pequeño balanceo de giro al volar, no vueltas completas: así
+    // la silueta de la flor se reconoce desde los primeros frames
+    const wobble = (Math.random() - 0.5) * 70;
 
     wrap.style.transform = `translate(${startX}px, ${startY}px) scale(0) rotate(0deg)`;
     wrap.style.opacity = '0';
@@ -327,10 +331,10 @@
       tx: targetX,
       ty: targetY,
       rotStart: 0,
-      rotEnd: restRot + spins * 360,
+      rotEnd: restRot + wobble,
       restRot,
-      start: performance.now() + Math.random() * 90,
-      duration: 1150 + Math.random() * 800
+      start: performance.now() + Math.random() * 60,
+      duration: 480 + Math.random() * 340
     });
     ensureFlightLoop();
   }

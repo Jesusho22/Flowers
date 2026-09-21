@@ -8,6 +8,10 @@
    Convención de autoría: {name} aparece siempre precedido por
    ", " (coma + espacio) y nunca al inicio de la frase, para que
    pueda quitarse limpiamente cuando no hay nombre.
+
+   Además, cuando hay nombre, se busca una palabra que rime con su
+   terminación (p. ej. "Valentina" -> "divina", "cristalina") para
+   que algunos mensajes tengan un toque de poema personalizado.
    ============================================================ */
 
 (function (global) {
@@ -36,15 +40,66 @@
     'Hay personas que son como girasoles: encuentran la luz incluso en los días nublados. Gracias por ser esa luz, {name}.'
   ];
 
-  let lastIndex = -1;
+  // mensajes que llevan además una palabra que rima con el nombre, para un
+  // toque de poema personalizado. Solo se usan cuando hay nombre y se
+  // encontró una rima razonable.
+  //
+  // Importante: cada palabra de RHYME_GROUPS es un ADJETIVO real (nunca un
+  // sustantivo como "estrella" o "candela"), para que concuerde en género
+  // con la persona en cualquiera de los patrones de abajo ("tan {rhyme}",
+  // "eres {rhyme}", "una forma {rhyme}"...) sin romper la gramática.
+  const RHYME_TEMPLATES = [
+    '{name}, tan {rhyme} como cada pétalo de este ramo. 🌼',
+    'Si tuviera que resumirte en una sola palabra, sería {rhyme}, {name}.',
+    '{name}, tienes una forma {rhyme} de iluminar todo a tu paso.',
+    'Eres {rhyme} de una manera que no todos logran ser, {name}. 💛',
+    '{name}, tu forma de ser es {rhyme} y no se olvida fácilmente.',
+    'Que este amarillo te recuerde lo {rhyme} que eres, {name}.',
+    '{name}, mereces sentirte tan {rhyme} como eres.',
+    '{name}, eres tan {rhyme} que no hace falta decir más.',
+    '{name}, si las flores pudieran hablar, dirían que eres {rhyme}.'
+  ];
 
-  function pickIndex() {
-    if (TEMPLATES.length <= 1) return 0;
+  // grupos ordenados del sufijo más largo (y por lo tanto más preciso) al
+  // más corto; se usa el primero que calce con el final del nombre
+  const RHYME_GROUPS = [
+    { suffix: 'ella', words: ['bella'] },
+    { suffix: 'ina', words: ['divina', 'cristalina', 'genuina'] },
+    { suffix: 'ana', words: ['soberana', 'cercana'] },
+    { suffix: 'osa', words: ['hermosa', 'preciosa', 'luminosa', 'maravillosa'] },
+    { suffix: 'ita', words: ['bonita', 'exquisita', 'infinita'] },
+    { suffix: 'era', words: ['sincera', 'verdadera', 'hechicera'] },
+    { suffix: 'ada', words: ['delicada', 'dorada'] },
+    { suffix: 'ia', words: ['sabia'] },
+    { suffix: 'a', words: ['especial', 'radiante', 'increíble', 'admirable'] },
+    { suffix: 'o', words: ['especial', 'radiante', 'increíble', 'admirable'] }
+  ].sort((a, b) => b.suffix.length - a.suffix.length);
+
+  function randomFrom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function stripAccents(str) {
+    return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  function findRhyme(rawName) {
+    const n = stripAccents(rawName.trim().toLowerCase());
+    if (!n) return null;
+    const group = RHYME_GROUPS.find((g) => n.endsWith(g.suffix));
+    return group ? randomFrom(group.words) : null;
+  }
+
+  let lastIndex = -1;
+  let lastRhymeIndex = -1;
+
+  function pickIndex(list, getLast, setLast) {
+    if (list.length <= 1) return 0;
     let idx;
     do {
-      idx = Math.floor(Math.random() * TEMPLATES.length);
-    } while (idx === lastIndex);
-    lastIndex = idx;
+      idx = Math.floor(Math.random() * list.length);
+    } while (idx === getLast());
+    setLast(idx);
     return idx;
   }
 
@@ -55,10 +110,22 @@
     return text.replace(/,\s*\{name\}/g, '').replace(/\{name\}/g, '');
   }
 
+  function fillRhymeTemplate(text, name, rhyme) {
+    return text.replace(/\{name\}/g, name).replace(/\{rhyme\}/g, rhyme);
+  }
+
   function getRandomDedication(name) {
-    const idx = pickIndex();
+    const trimmed = (name || '').trim();
+    const rhyme = trimmed ? findRhyme(trimmed) : null;
+
+    if (rhyme && Math.random() < 0.5) {
+      const idx = pickIndex(RHYME_TEMPLATES, () => lastRhymeIndex, (i) => { lastRhymeIndex = i; });
+      return fillRhymeTemplate(RHYME_TEMPLATES[idx], trimmed, rhyme);
+    }
+
+    const idx = pickIndex(TEMPLATES, () => lastIndex, (i) => { lastIndex = i; });
     return fillName(TEMPLATES[idx], name);
   }
 
-  global.Dedications = { getRandomDedication, TEMPLATES };
+  global.Dedications = { getRandomDedication, TEMPLATES, RHYME_TEMPLATES, findRhyme };
 }(window));
