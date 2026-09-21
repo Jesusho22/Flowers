@@ -406,28 +406,9 @@ button {
   50% { transform: rotate(1.3deg) translateY(-5px); }
 }
 
-/* cada cabeza de flor del ramo se mece de forma independiente */
-.bouquet-svg > svg {
-  transform-box: fill-box;
-  transform-origin: 50% 65%;
-  animation: petal-sway 4.2s ease-in-out infinite;
-}
-
-.bouquet-svg > svg:nth-child(even) {
-  animation-duration: 4.8s;
-  animation-delay: 0.35s;
-}
-
-.bouquet-svg > svg:nth-child(3n) {
-  animation-duration: 3.6s;
-  animation-delay: 0.6s;
-  animation-direction: reverse;
-}
-
-.bouquet-svg > svg:nth-child(3n + 1) {
-  animation-duration: 5.2s;
-  animation-delay: 0.15s;
-}
+/* el balanceo de cada flor del ramo se anima con SMIL (animateTransform),
+   inyectado directamente en el SVG por flowers.js: es más fiable entre
+   navegadores que animar transform sobre <svg> anidados vía CSS */
 
 .dedication-box {
   margin: 18px auto 8px;
@@ -547,6 +528,24 @@ button {
 }
 
 .hidden-canvas { display: none; }
+
+/* ---------- lluvia de pétalos (agitar el celular / mover el cursor) ---------- */
+
+.petal-rain-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.falling-petal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 2px 3px rgba(120, 80, 50, 0.18));
+}
 
 /* ---------- destello de chispas al abrir la tarjeta ---------- */
 

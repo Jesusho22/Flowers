@@ -157,16 +157,35 @@
     amarillo: ['#FFE68A', '#FFD54F', '#FFC107', '#F9A825']
   };
   const PASTEL_FAMILIES = ['rosa', 'lavanda', 'durazno', 'menta', 'cielo'];
+  // mapeo a paletas reales de flowers.js para poder usar especies con nombre
+  // (rosa, margarita, girasol, dalia, hortensia) durante la explosión
+  const FAMILY_TO_PALETTE = { rosa: 'rosa', lavanda: 'lavanda', durazno: 'durazno', menta: 'pastel', cielo: 'cielo', amarillo: 'amarillo' };
+  const NAMED_SPECIES = ['rosa', 'margarita', 'girasol', 'dalia', 'hortensia'];
 
   function pickExplosionColors(progress) {
     const yellowWeight = 0.15 + progress * 0.55;
     if (Math.random() < yellowWeight) {
       const c = randomFrom(EXPLOSION_COLORS.amarillo);
-      return { petal: c, center: '#8C5A1B' };
+      return { petal: c, center: '#8C5A1B', family: 'amarillo' };
     }
     const family = randomFrom(PASTEL_FAMILIES);
     const c = randomFrom(EXPLOSION_COLORS[family]);
-    return { petal: c, center: '#F9A825' };
+    return { petal: c, center: '#F9A825', family };
+  }
+
+  // elige el arte para una flor de la explosión: para las grandes, alterna
+  // entre el "blossom" genérico y especies con nombre reales (rosa,
+  // margarita, girasol, dalia, hortensia) para que el mosaico final se vea
+  // tan variado como un ramo de verdad, no flores repetidas
+  function pickExplosionArt(big, progress) {
+    const { petal, center, family } = pickExplosionColors(progress);
+    if (!big) return window.Flowers.simpleBlossomSVG(petal, center);
+    if (Math.random() < 0.55) {
+      const paletteKey = FAMILY_TO_PALETTE[family] || 'amarillo';
+      const namedType = randomFrom(NAMED_SPECIES);
+      return window.Flowers.flowerHeadSVG(namedType, paletteKey).markup;
+    }
+    return window.Flowers.lushBlossomSVG(petal, center);
   }
 
   function buildTargetPositions(count) {
@@ -244,15 +263,13 @@
     }
   }
 
-  function spawnExplosionFlower(origin, target, progress) {
+  function spawnExplosionFlower(origin, target, progress, forceBig) {
     // conforme avanza la explosión aparecen más flores grandes y "pomposas",
-    // dando la sensación de que el ramo final ya se está formando
-    const big = Math.random() < 0.3 + progress * 0.25;
-    const size = big ? 56 + Math.random() * 50 : 28 + Math.random() * Math.random() * 34;
-    const { petal, center } = pickExplosionColors(progress);
-    const svg = big
-      ? window.Flowers.lushBlossomSVG(petal, center)
-      : window.Flowers.simpleBlossomSVG(petal, center);
+    // dando la sensación de que el ramo final ya se está formando y que la
+    // pantalla se llena por completo, como un mosaico de flores sin huecos
+    const big = forceBig || Math.random() < 0.35 + progress * 0.35;
+    const size = big ? 74 + Math.random() * 70 : 42 + Math.random() * Math.random() * 46;
+    const svg = pickExplosionArt(big, progress);
 
     const wrap = document.createElement('div');
     wrap.className = 'explosion-flower';
@@ -323,14 +340,15 @@
     el.explosionLayer.innerHTML = '';
     activeFlights.length = 0;
 
-    // más densidad que una simple "lluvia": busca la sensación de que el
-    // ramo pomposo ya se está formando mientras la pantalla se llena
+    // densidad alta a propósito: el tamaño de las flores supera el tamaño
+    // de celda de la grilla, así que se solapan mucho y el mosaico final
+    // cubre la pantalla por completo, sin fondo visible entre flores
     const area = window.innerWidth * window.innerHeight;
-    const count = clamp(Math.round(area / 6500), 140, 320);
+    const count = clamp(Math.round(area / 5200), 170, 340);
     const targets = buildTargetPositions(count);
 
     const totalDurationMs = reducedMotion ? 1200 : 5600;
-    const intervalMs = 35;
+    const intervalMs = 32;
     const totalSteps = Math.ceil(totalDurationMs / intervalMs);
     const batchSize = Math.max(1, Math.ceil(count / totalSteps));
 
@@ -342,10 +360,24 @@
       }
       if (spawned >= count) {
         clearInterval(timer);
+        spawnFillGapsPass(origin);
         // deja terminar los últimos vuelos (arco + rebote de aterrizaje)
-        setTimeout(revealBouquet, reducedMotion ? 500 : 2100);
+        setTimeout(revealBouquet, reducedMotion ? 500 : 2500);
       }
     }, intervalMs);
+  }
+
+  // pasada final: unas cuantas flores grandes más en posiciones totalmente
+  // aleatorias (no en la grilla) para tapar cualquier hueco que haya
+  // quedado y reforzar la sensación de pantalla completamente cubierta,
+  // justo como remate antes de revelar el ramo
+  function spawnFillGapsPass(origin) {
+    if (reducedMotion) return;
+    const extra = 16 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < extra; i++) {
+      const target = { x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight };
+      spawnExplosionFlower(origin, target, 1, true);
+    }
   }
 
   /* ---------------- pantalla del ramo ---------------- */

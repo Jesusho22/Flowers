@@ -82,14 +82,15 @@
   <script src="js/flowers.js"></script>
   <script src="js/dedications.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/petals.js"></script>
   <script src="js/main.js"></script>
   <script>
     // Ilustración decorativa de guirnalda en la tarjeta (usa el generador de flores.js)
     document.addEventListener('DOMContentLoaded', function () {
       var target = document.getElementById('cardIllustration');
       if (!target || !window.Flowers) return;
-      var types = ['rosa', 'margarita', 'tulipan', 'lirio'];
-      var palettes = ['rosa', 'pastel', 'lavanda', 'durazno'];
+      var types = ['rosa', 'margarita', 'tulipan', 'lirio', 'dalia', 'hortensia'];
+      var palettes = ['rosa', 'pastel', 'lavanda', 'durazno', 'cielo'];
       var count = 8;
       var radius = 78;
       var markup = '';

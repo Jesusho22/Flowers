@@ -73,6 +73,7 @@
     durazno: { label: 'Durazno', swatch: '#FFB37C', shades: ['#FFE3C7', '#FFD1A3', '#FFB37C', '#FFA05C'] },
     rosa: { label: 'Rosa pastel', swatch: '#FFB0D1', shades: ['#FFE3EF', '#FFC9DE', '#FFB0D1', '#FF9EC4'] },
     lavanda: { label: 'Lavanda', swatch: '#C9A6E8', shades: ['#EFE5FA', '#D9C6F1', '#C9A6E8', '#B78CE0'] },
+    cielo: { label: 'Cielo', swatch: '#9AC8F2', shades: ['#E7F2FF', '#B3DBFF', '#9AC8F2', '#7FB5EA'] },
     arcoiris: { label: 'Arcoíris pastel', swatch: 'conic-gradient(#FFE082,#FFC9DE,#C9A6E8,#B3DBFF,#AEEAD0,#FFE082)', shades: null }
   };
 
@@ -95,7 +96,9 @@
     margarita: { label: 'Margarita', emoji: '🌼' },
     rosa: { label: 'Rosa', emoji: '🌹' },
     tulipan: { label: 'Tulipán', emoji: '🌷' },
-    lirio: { label: 'Lirio', emoji: '🌸' }
+    lirio: { label: 'Lirio', emoji: '🌸' },
+    dalia: { label: 'Dalia', emoji: '🌺' },
+    hortensia: { label: 'Hortensia', emoji: '💠' }
   };
 
   /* ---------- generadores de cabezas de flor (viewBox 0 0 100 100) ---------- */
@@ -208,18 +211,69 @@
     return `<g class="flower-head flower-tulipan">${out}</g>`;
   }
 
+  function daliaHead(shades) {
+    const c0 = shades[0] || '#FFE082';
+    const c1 = shades[1] || c0;
+    const c2 = shades[2] || c1;
+    const c3 = shades[3] || c2;
+    const rings = [
+      { petals: 14, dist: 29, rx: 3.4, ry: 12, rot: 0, color: c3 },
+      { petals: 13, dist: 23, rx: 3.2, ry: 11, rot: 14, color: mix(c3, c2, 0.5) },
+      { petals: 12, dist: 17, rx: 3, ry: 10, rot: 7, color: c2 },
+      { petals: 11, dist: 11, rx: 2.6, ry: 8, rot: 18, color: mix(c2, c1, 0.5) },
+      { petals: 9, dist: 5.5, rx: 2.2, ry: 6, rot: 9, color: c1 }
+    ];
+    let out = '';
+    rings.forEach((ring) => {
+      for (let i = 0; i < ring.petals; i++) {
+        const angle = (360 / ring.petals) * i + ring.rot;
+        out += `<ellipse cx="50" cy="${(50 - ring.dist).toFixed(2)}" rx="${ring.rx}" ry="${ring.ry}" fill="${ring.color}" transform="rotate(${angle.toFixed(2)} 50 50)"/>`;
+      }
+    });
+    out += `<circle cx="50" cy="50" r="3" fill="${shade(c0, -0.25)}"/>`;
+    return `<g class="flower-head flower-dalia">${out}</g>`;
+  }
+
+  function floretSVG(cx, cy, color, rot) {
+    const s = 5.5;
+    return `<g transform="translate(${cx.toFixed(2)},${cy.toFixed(2)}) rotate(${rot.toFixed(1)})">
+      <ellipse cx="0" cy="-${s}" rx="3.2" ry="${s}" fill="${color}"/>
+      <ellipse cx="0" cy="${s}" rx="3.2" ry="${s}" fill="${color}"/>
+      <ellipse cx="-${s}" cy="0" rx="${s}" ry="3.2" fill="${color}"/>
+      <ellipse cx="${s}" cy="0" rx="${s}" ry="3.2" fill="${color}"/>
+      <circle cx="0" cy="0" r="1.6" fill="${shade(color, -0.25)}"/>
+    </g>`;
+  }
+
+  function hortensiaHead(shades) {
+    const palette = [shades[0], shades[1] || shades[0], shades[2] || shades[0], shades[3] || shades[0]];
+    let florets = '';
+    const count = 16;
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 6 + Math.random() * 25;
+      const cx = 50 + Math.cos(a) * r;
+      const cy = 50 + Math.sin(a) * r;
+      const color = randomFrom(palette);
+      florets += floretSVG(cx, cy, color, Math.random() * 360);
+    }
+    return `<g class="flower-head flower-hortensia">${florets}</g>`;
+  }
+
   const HEAD_BUILDERS = {
     girasol: girasolHead,
     margarita: margaritaHead,
     rosa: rosaHead,
     tulipan: tulipanHead,
-    lirio: lirioHead
+    lirio: lirioHead,
+    dalia: daliaHead,
+    hortensia: hortensiaHead
   };
 
   function pickConcreteType(type) {
     if (type && type !== 'variado' && HEAD_BUILDERS[type]) return type;
     // "variado": el girasol predomina por ser la flor insignia del día
-    const weighted = ['girasol', 'girasol', 'girasol', 'margarita', 'rosa', 'tulipan', 'lirio'];
+    const weighted = ['girasol', 'girasol', 'margarita', 'rosa', 'tulipan', 'lirio', 'dalia', 'hortensia'];
     return randomFrom(weighted);
   }
 
@@ -334,7 +388,13 @@
       }
       const { markup } = flowerHeadSVG(type, palette);
       const half = slot.size / 2;
-      flowersMarkup += `<svg x="${slot.x - half}" y="${slot.y - half}" width="${slot.size}" height="${slot.size}" viewBox="0 0 100 100">${markup}</svg>`;
+      // el balanceo de cada flor se anima con SMIL (animateTransform) en vez
+      // de CSS sobre <svg> anidados: es la técnica que funciona de forma
+      // fiable en todos los navegadores reales (incluidos móviles)
+      const swaySpan = (2.4 + Math.random() * 2.4).toFixed(2);
+      const swayDur = (3.2 + Math.random() * 2.6).toFixed(2);
+      const swayDelay = (Math.random() * 2).toFixed(2);
+      flowersMarkup += `<svg x="${slot.x - half}" y="${slot.y - half}" width="${slot.size}" height="${slot.size}" viewBox="0 0 100 100"><g>${markup}<animateTransform attributeName="transform" type="rotate" values="-${swaySpan} 50 68; ${swaySpan} 50 68; -${swaySpan} 50 68" dur="${swayDur}s" begin="${swayDelay}s" repeatCount="indefinite"/></g></svg>`;
     });
 
     const filler = shade('#FFF6E3', 0);
