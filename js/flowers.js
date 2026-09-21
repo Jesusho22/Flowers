@@ -241,6 +241,26 @@
     return `<g>${petals}<circle cx="50" cy="50" r="10" fill="${centerColor}"/></g>`;
   }
 
+  // flor de dos capas, más "pomposa" y voluminosa, para el primer plano
+  // de la explosión (economiza recursos usándola solo en flores grandes)
+  function lushBlossomSVG(petalColor, centerColor) {
+    const outerColor = petalColor;
+    const innerColor = shade(petalColor, 0.16);
+    let outer = '';
+    const nOuter = 8;
+    for (let i = 0; i < nOuter; i++) {
+      const angle = (360 / nOuter) * i;
+      outer += `<ellipse cx="50" cy="18" rx="13" ry="21" fill="${outerColor}" transform="rotate(${angle} 50 50)"/>`;
+    }
+    let inner = '';
+    const nInner = 6;
+    for (let i = 0; i < nInner; i++) {
+      const angle = (360 / nInner) * i + 15;
+      inner += `<ellipse cx="50" cy="27" rx="10" ry="16" fill="${innerColor}" opacity="0.95" transform="rotate(${angle} 50 50)"/>`;
+    }
+    return `<g>${outer}${inner}<circle cx="50" cy="50" r="11" fill="${centerColor}"/></g>`;
+  }
+
   /* ---------- composición del ramo completo ---------- */
 
   const BOUQUET_VIEWBOX = { w: 320, h: 380 };
@@ -344,6 +364,7 @@
     paletteShades,
     flowerHeadSVG,
     simpleBlossomSVG,
+    lushBlossomSVG,
     buildBouquetSVG,
     utils: { clamp, randomFrom, shuffle, hexToRgb, rgbToHex, shade, mix }
   };

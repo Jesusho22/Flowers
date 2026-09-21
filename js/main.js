@@ -191,10 +191,69 @@
     return shuffle(positions);
   }
 
+  /* ---- vuelo con arco orgánico y "bloom" (rAF, no transiciones CSS) ---- */
+
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function easeOutBack(t) {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  }
+
+  function quadBezier(p0, p1, p2, t) {
+    const u = 1 - t;
+    return u * u * p0 + 2 * u * t * p1 + t * t * p2;
+  }
+
+  const activeFlights = [];
+  let flightLoopRunning = false;
+
+  function stepFlights(now) {
+    for (let i = activeFlights.length - 1; i >= 0; i--) {
+      const f = activeFlights[i];
+      const elapsed = now - f.start;
+      const t = clamp(elapsed / f.duration, 0, 1);
+      const posT = easeOutCubic(t);
+      const x = quadBezier(f.sx, f.cx, f.tx, posT);
+      const y = quadBezier(f.sy, f.cy, f.ty, posT);
+      const scale = clamp(easeOutBack(t), 0, 1.18);
+      const rot = f.rotStart + (f.rotEnd - f.rotStart) * posT;
+      const opacity = clamp(elapsed / (f.duration * 0.18), 0, 1) * 0.96;
+
+      if (t >= 1) {
+        f.el.style.transform = `translate(${f.tx}px, ${f.ty}px) scale(1) rotate(${f.restRot}deg)`;
+        f.el.style.opacity = '0.96';
+        activeFlights.splice(i, 1);
+      } else {
+        f.el.style.transform = `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`;
+        f.el.style.opacity = String(opacity);
+      }
+    }
+    if (activeFlights.length > 0) {
+      requestAnimationFrame(stepFlights);
+    } else {
+      flightLoopRunning = false;
+    }
+  }
+
+  function ensureFlightLoop() {
+    if (!flightLoopRunning) {
+      flightLoopRunning = true;
+      requestAnimationFrame(stepFlights);
+    }
+  }
+
   function spawnExplosionFlower(origin, target, progress) {
-    const size = 34 + Math.random() * Math.random() * 42;
+    // conforme avanza la explosión aparecen más flores grandes y "pomposas",
+    // dando la sensación de que el ramo final ya se está formando
+    const big = Math.random() < 0.3 + progress * 0.25;
+    const size = big ? 56 + Math.random() * 50 : 28 + Math.random() * Math.random() * 34;
     const { petal, center } = pickExplosionColors(progress);
-    const svg = window.Flowers.simpleBlossomSVG(petal, center);
+    const svg = big
+      ? window.Flowers.lushBlossomSVG(petal, center)
+      : window.Flowers.simpleBlossomSVG(petal, center);
+
     const wrap = document.createElement('div');
     wrap.className = 'explosion-flower';
     wrap.style.width = `${size}px`;
@@ -203,51 +262,75 @@
     // transformación de vuelo (posición/escala/rotación) del contenedor
     wrap.innerHTML = `<span class="explosion-flower-sway"><svg viewBox="0 0 100 100" width="100%" height="100%">${svg}</svg></span>`;
     if (!reducedMotion) {
-      wrap.style.setProperty('--sway-dur', `${2.8 + Math.random() * 2.2}s`);
+      wrap.style.setProperty('--sway-dur', `${2.8 + Math.random() * 2.4}s`);
       wrap.style.setProperty('--sway-delay', `${Math.random() * 2}s`);
     }
-
-    const rot = Math.random() * 360;
-    const startX = origin.x - size / 2;
-    const startY = origin.y - size / 2;
-    const dx = target.x - origin.x;
-    const dy = target.y - origin.y;
-
-    wrap.style.transform = `translate(${startX}px, ${startY}px) scale(0.25) rotate(0deg)`;
-    wrap.style.opacity = '0';
     el.explosionLayer.appendChild(wrap);
 
+    const startX = origin.x - size / 2;
+    const startY = origin.y - size / 2;
+    const targetX = target.x - size / 2;
+    const targetY = target.y - size / 2;
+    const restRot = (Math.random() - 0.5) * 26;
+
     if (reducedMotion) {
-      wrap.style.transition = 'opacity .6s ease';
+      wrap.style.transform = `translate(${startX}px, ${startY}px) scale(0.3) rotate(0deg)`;
+      wrap.style.opacity = '0';
+      wrap.style.transition = 'transform .6s ease, opacity .6s ease';
       requestAnimationFrame(() => {
-        wrap.style.transform = `translate(${startX + dx}px, ${startY + dy}px) scale(1) rotate(${rot}deg)`;
+        wrap.style.transform = `translate(${targetX}px, ${targetY}px) scale(1) rotate(${restRot}deg)`;
         wrap.style.opacity = '0.95';
       });
       return;
     }
 
-    const duration = 900 + Math.random() * 500;
-    const delay = Math.random() * 120;
-    wrap.style.transition = `transform ${duration}ms cubic-bezier(.2,.65,.3,1) ${delay}ms, opacity 500ms ease ${delay}ms`;
+    // punto de control perpendicular a la línea recta origen->destino, para
+    // que cada flor dibuje un arco orgánico (con un pequeño impulso hacia
+    // arriba) en vez de volar en línea recta
+    const dx = targetX - startX;
+    const dy = targetY - startY;
+    const dist = Math.hypot(dx, dy) || 1;
+    const perpX = -dy / dist;
+    const perpY = dx / dist;
+    const bow = (Math.random() - 0.5) * Math.min(220, dist * 0.9);
+    const midX = (startX + targetX) / 2 + perpX * bow;
+    const midY = (startY + targetY) / 2 + perpY * bow - 30 - Math.random() * 50;
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        wrap.style.transform = `translate(${startX + dx}px, ${startY + dy}px) scale(1) rotate(${rot}deg)`;
-        wrap.style.opacity = '0.95';
-      });
+    const spins = (1 + Math.random() * 1.4) * (Math.random() > 0.5 ? 1 : -1);
+
+    wrap.style.transform = `translate(${startX}px, ${startY}px) scale(0) rotate(0deg)`;
+    wrap.style.opacity = '0';
+
+    activeFlights.push({
+      el: wrap,
+      sx: startX,
+      sy: startY,
+      cx: midX,
+      cy: midY,
+      tx: targetX,
+      ty: targetY,
+      rotStart: 0,
+      rotEnd: restRot + spins * 360,
+      restRot,
+      start: performance.now() + Math.random() * 90,
+      duration: 1150 + Math.random() * 800
     });
+    ensureFlightLoop();
   }
 
   function startExplosion(origin) {
     el.explosionLayer.classList.add('active');
     el.explosionLayer.innerHTML = '';
+    activeFlights.length = 0;
 
+    // más densidad que una simple "lluvia": busca la sensación de que el
+    // ramo pomposo ya se está formando mientras la pantalla se llena
     const area = window.innerWidth * window.innerHeight;
-    const count = clamp(Math.round(area / 9000), 80, 220);
+    const count = clamp(Math.round(area / 6500), 140, 320);
     const targets = buildTargetPositions(count);
 
-    const totalDurationMs = reducedMotion ? 1200 : 5200;
-    const intervalMs = 40;
+    const totalDurationMs = reducedMotion ? 1200 : 5600;
+    const intervalMs = 35;
     const totalSteps = Math.ceil(totalDurationMs / intervalMs);
     const batchSize = Math.max(1, Math.ceil(count / totalSteps));
 
@@ -259,7 +342,8 @@
       }
       if (spawned >= count) {
         clearInterval(timer);
-        setTimeout(revealBouquet, reducedMotion ? 500 : 1300);
+        // deja terminar los últimos vuelos (arco + rebote de aterrizaje)
+        setTimeout(revealBouquet, reducedMotion ? 500 : 2100);
       }
     }, intervalMs);
   }
@@ -470,7 +554,7 @@
   function exportCard() {
     buildCardBlob().then((pngBlob) => {
       const link = document.createElement('a');
-      const safeName = (state.name || 'amiga').toLowerCase().replace(/[^a-z0-9ñáéíóúü]+/gi, '-');
+      const safeName = (state.name || 'sorpresa').toLowerCase().replace(/[^a-z0-9ñáéíóúü]+/gi, '-');
       link.download = `tarjeta-flores-amarillas-${safeName}.png`;
       link.href = URL.createObjectURL(pngBlob);
       link.click();
