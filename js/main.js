@@ -243,6 +243,7 @@
       if (t >= 1) {
         f.el.style.transform = `translate(${f.tx}px, ${f.ty}px) scale(1) rotate(${f.restRot}deg)`;
         f.el.style.opacity = '0.96';
+        f.land();
         activeFlights.splice(i, 1);
       } else {
         f.el.style.transform = `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`;
@@ -269,7 +270,12 @@
     // pantalla se llena por completo, como un mosaico de flores sin huecos
     const big = forceBig || Math.random() < 0.35 + progress * 0.35;
     const size = big ? 74 + Math.random() * 70 : 42 + Math.random() * Math.random() * 46;
-    const svg = pickExplosionArt(big, progress);
+    const { petal, center } = pickExplosionColors(progress);
+    // mientras vuela se pinta una flor económica (pocas formas = pintado
+    // rápido incluso en equipos lentos); la ilustración final, más rica
+    // (rosa/dalia/hortensia/girasol...), se intercambia recién al aterrizar,
+    // cuando ya quedará estática
+    const flightSvg = window.Flowers.simpleBlossomSVG(petal, center);
 
     const wrap = document.createElement('div');
     wrap.className = 'explosion-flower';
@@ -277,18 +283,24 @@
     wrap.style.height = `${size}px`;
     // el balanceo vive en un hijo independiente para no chocar con la
     // transformación de vuelo (posición/escala/rotación) del contenedor
-    wrap.innerHTML = `<span class="explosion-flower-sway"><svg viewBox="0 0 100 100" width="100%" height="100%">${svg}</svg></span>`;
+    wrap.innerHTML = `<span class="explosion-flower-sway"><svg viewBox="0 0 100 100" width="100%" height="100%">${flightSvg}</svg></span>`;
     if (!reducedMotion) {
       wrap.style.setProperty('--sway-dur', `${2.8 + Math.random() * 2.4}s`);
       wrap.style.setProperty('--sway-delay', `${Math.random() * 2}s`);
     }
     el.explosionLayer.appendChild(wrap);
+    const svgEl = wrap.querySelector('svg');
 
     const startX = origin.x - size / 2;
     const startY = origin.y - size / 2;
     const targetX = target.x - size / 2;
     const targetY = target.y - size / 2;
     const restRot = (Math.random() - 0.5) * 26;
+
+    function land() {
+      wrap.classList.add('landed');
+      svgEl.innerHTML = pickExplosionArt(big, progress);
+    }
 
     if (reducedMotion) {
       wrap.style.transform = `translate(${startX}px, ${startY}px) scale(0.3) rotate(0deg)`;
@@ -298,6 +310,7 @@
         wrap.style.transform = `translate(${targetX}px, ${targetY}px) scale(1) rotate(${restRot}deg)`;
         wrap.style.opacity = '0.95';
       });
+      setTimeout(land, 650);
       return;
     }
 
@@ -334,7 +347,8 @@
       rotEnd: restRot + wobble,
       restRot,
       start: performance.now() + Math.random() * 60,
-      duration: 480 + Math.random() * 340
+      duration: 480 + Math.random() * 340,
+      land
     });
     ensureFlightLoop();
   }
@@ -346,9 +360,11 @@
 
     // densidad alta a propósito: el tamaño de las flores supera el tamaño
     // de celda de la grilla, así que se solapan mucho y el mosaico final
-    // cubre la pantalla por completo, sin fondo visible entre flores
+    // cubre la pantalla por completo, sin fondo visible entre flores.
+    // El límite se cuida para que equipos modestos no se saturen de
+    // trabajo por cuadro y las flores lleguen a verse completas.
     const area = window.innerWidth * window.innerHeight;
-    const count = clamp(Math.round(area / 5200), 170, 340);
+    const count = clamp(Math.round(area / 6200), 130, 240);
     const targets = buildTargetPositions(count);
 
     const totalDurationMs = reducedMotion ? 1200 : 5600;
