@@ -1,0 +1,616 @@
+/* ============================================================
+   style.css — diseño floreado vintage, cálido y suave,
+   pensado para público femenino con acentos en amarillo.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Quicksand:wght@400;500;600;700&display=swap');
+
+:root {
+  --cream: #fff8f0;
+  --cream-deep: #ffefd9;
+  --blush: #ffd9e8;
+  --blush-deep: #ffb6d1;
+  --lavender: #e3d1f4;
+  --peach: #ffd9b3;
+  --mint: #c9f2df;
+  --gold: #ffd54f;
+  --gold-deep: #f4a300;
+  --gold-soft: #ffe68a;
+  --ink: #6b4f3a;
+  --ink-soft: #a9805a;
+  --white: #fffdf9;
+  --shadow: 0 18px 40px rgba(150, 100, 60, 0.18);
+  --font-title: 'Playfair Display', Georgia, serif;
+  --font-body: 'Quicksand', 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: radial-gradient(circle at 20% 10%, #fff3e0 0%, var(--cream) 45%, var(--cream-deep) 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+#app { position: relative; min-height: 100vh; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---------- fondo decorativo flotante ---------- */
+
+.bg-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-decor span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(2px);
+  opacity: 0.5;
+  animation: float-blob 14s ease-in-out infinite;
+}
+
+.bg-decor span:nth-child(1) { width: 180px; height: 180px; background: var(--blush); top: 8%; left: 6%; animation-delay: 0s; }
+.bg-decor span:nth-child(2) { width: 120px; height: 120px; background: var(--mint); top: 65%; left: 10%; animation-delay: 2s; }
+.bg-decor span:nth-child(3) { width: 220px; height: 220px; background: var(--lavender); top: 15%; right: 8%; animation-delay: 4s; }
+.bg-decor span:nth-child(4) { width: 140px; height: 140px; background: var(--peach); bottom: 8%; right: 12%; animation-delay: 1s; }
+.bg-decor span:nth-child(5) { width: 90px; height: 90px; background: var(--gold-soft); bottom: 30%; left: 42%; animation-delay: 3s; }
+
+@keyframes float-blob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-24px) scale(1.06); }
+}
+
+/* ---------- pantallas ---------- */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+  z-index: 10;
+  padding: 24px;
+}
+
+.screen.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#screen-bouquet { z-index: 30; overflow-y: auto; align-items: flex-start; }
+#screen-card { z-index: 10; }
+
+/* ---------- ventana emergente de bienvenida (flota sobre la tarjeta) ---------- */
+
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(107, 79, 58, 0.28);
+  backdrop-filter: blur(3px);
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.welcome-overlay.closed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.welcome-card {
+  background: var(--white);
+  border-radius: 28px;
+  padding: 40px 32px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(244, 206, 142, 0.5);
+  position: relative;
+  transform: translateY(0);
+  animation: welcome-pop 0.6s cubic-bezier(.2,.8,.25,1.1);
+}
+
+@keyframes welcome-pop {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.welcome-card::before {
+  content: '✿';
+  display: block;
+  font-size: 2.2rem;
+  color: var(--gold-deep);
+  margin-bottom: 8px;
+}
+
+.script-title {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: clamp(1.7rem, 5vw, 2.3rem);
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+
+.welcome-card p {
+  color: var(--ink-soft);
+  margin: 0 0 22px;
+  font-size: 1rem;
+}
+
+#nameInput {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 999px;
+  border: 2px solid var(--blush-deep);
+  background: var(--cream);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 22px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#nameInput:focus {
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 4px rgba(255, 213, 79, 0.25);
+}
+
+.btn-primary, .btn-secondary {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 14px 28px;
+  border-radius: 999px;
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+  color: #5a3a12;
+  box-shadow: 0 10px 24px rgba(244, 163, 0, 0.35);
+}
+
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(244, 163, 0, 0.42); }
+
+.btn-secondary {
+  background: var(--white);
+  color: var(--ink);
+  border: 2px solid var(--blush-deep);
+}
+
+.btn-secondary:hover { transform: translateY(-2px); background: var(--blush); }
+
+/* ---------- tarjeta vintage ---------- */
+
+.card-scene {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vintage-card {
+  width: min(320px, 82vw);
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(160deg, var(--white), var(--cream));
+  border-radius: 18px;
+  border: none;
+  padding: 0;
+  position: relative;
+  box-shadow: var(--shadow), 0 0 0 8px rgba(255, 255, 255, 0.6);
+  animation: card-idle 3.6s ease-in-out infinite;
+  transition: transform 0.5s ease, opacity 0.5s ease, box-shadow 0.5s ease;
+  overflow: hidden;
+}
+
+@keyframes card-idle {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+.vintage-card:hover { box-shadow: var(--shadow), 0 0 0 8px rgba(255, 213, 79, 0.35); }
+
+.vintage-card.opening {
+  animation: none;
+  transform: scale(1.12) rotate(0deg);
+  opacity: 0;
+  box-shadow: 0 0 90px 40px rgba(255, 213, 79, 0.55);
+}
+
+.card-frame {
+  position: absolute;
+  inset: 14px;
+  border: 2px solid var(--blush-deep);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 213, 79, 0.12), transparent 60%),
+    repeating-linear-gradient(135deg, rgba(255, 182, 209, 0.06) 0 12px, transparent 12px 24px);
+}
+
+.card-illustration { width: 100%; }
+
+.card-title {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--ink);
+  text-align: center;
+  margin: 12px 0 0;
+  line-height: 1.35;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.card-hint {
+  margin-top: 14px;
+  font-family: var(--font-title);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  animation: pulse-hint 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse-hint {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ---------- capa de explosión de flores ---------- */
+
+.explosion-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.9s ease, filter 0.9s ease;
+}
+
+.explosion-layer.active { opacity: 1; }
+
+.explosion-layer.settled {
+  opacity: 0.5;
+  filter: blur(2px) brightness(1.05);
+  transition: opacity 1.2s ease, filter 1.2s ease;
+}
+
+.explosion-flower {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform, opacity;
+}
+
+/* la sombra se aplica solo una vez la flor ya aterrizó y quedó estática:
+   drop-shadow es una operación de pintado costosa (no es compositor-only
+   como transform/opacity), así que recalcularla cuadro a cuadro en ~150-300
+   flores en pleno vuelo es lo que hacía que equipos más lentos se atascaran
+   y las flores se vieran "congeladas" a medio formar */
+.explosion-flower.landed {
+  filter: drop-shadow(0 4px 6px rgba(150, 100, 60, 0.15));
+}
+
+.explosion-flower-sway {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 65%;
+  animation: petal-sway var(--sway-dur, 3.4s) ease-in-out infinite;
+  animation-delay: var(--sway-delay, 0s);
+  /* mientras la flor vuela, el balanceo permanece en pausa: menos
+     animaciones simultáneas compitiendo por el hilo de composición */
+  animation-play-state: paused;
+}
+
+.explosion-flower.landed .explosion-flower-sway {
+  animation-play-state: running;
+}
+
+@keyframes petal-sway {
+  0%, 100% { transform: rotate(-4deg) translateY(0); }
+  50% { transform: rotate(4deg) translateY(-4px); }
+}
+
+/* ---------- pantalla del ramo ---------- */
+
+.bouquet-scene {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px 20px 60px;
+  text-align: center;
+}
+
+.icon-btn {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 35;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--white);
+  box-shadow: var(--shadow);
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.icon-btn:hover { transform: scale(1.08); }
+
+.bouquet-container {
+  width: min(360px, 90vw);
+  margin: 0 auto;
+  opacity: 0;
+  transform: scale(0.7) translateY(30px);
+}
+
+.bouquet-container.pop-in {
+  animation: bouquet-pop 1.1s cubic-bezier(.2,.8,.25,1.1) forwards;
+}
+
+@keyframes bouquet-pop {
+  0% { opacity: 0; transform: scale(0.65) translateY(40px); filter: drop-shadow(0 0 0 rgba(255,213,79,0)); }
+  60% { opacity: 1; transform: scale(1.04) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); filter: drop-shadow(0 18px 30px rgba(244,163,0,0.28)); }
+}
+
+.bouquet-svg { width: 100%; height: auto; overflow: visible; }
+
+.bouquet-container.pop-in {
+  transform-origin: 50% 92%;
+}
+
+.bouquet-container.swaying {
+  opacity: 1;
+  animation: bouquet-sway 5.5s ease-in-out infinite;
+  transform-origin: 50% 92%;
+}
+
+@keyframes bouquet-sway {
+  0%, 100% { transform: rotate(-1.3deg) translateY(0); }
+  50% { transform: rotate(1.3deg) translateY(-5px); }
+}
+
+/* el balanceo de cada flor del ramo se anima con SMIL (animateTransform),
+   inyectado directamente en el SVG por flowers.js: es más fiable entre
+   navegadores que animar transform sobre <svg> anidados vía CSS */
+
+.dedication-box {
+  margin: 18px auto 8px;
+  max-width: 480px;
+}
+
+.dedication-text {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: clamp(1.05rem, 3vw, 1.3rem);
+  line-height: 1.6;
+  color: var(--ink);
+  min-height: 3em;
+  opacity: 0;
+}
+
+.dedication-text.fade-in {
+  animation: text-fade-in 0.9s ease forwards;
+}
+
+@keyframes text-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dedication-box .btn-secondary {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  padding: 10px 20px;
+}
+
+/* ---------- personalizador ---------- */
+
+.customizer {
+  margin-top: 40px;
+  background: var(--white);
+  border-radius: 24px;
+  padding: 28px 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(244, 206, 142, 0.5);
+  text-align: left;
+}
+
+.customizer h2 {
+  font-family: var(--font-title);
+  font-size: 1.35rem;
+  text-align: center;
+  margin: 0 0 18px;
+  color: var(--ink);
+}
+
+.field-group { margin-bottom: 18px; }
+
+.field-group label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--cream-deep);
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.chip:hover { border-color: var(--blush-deep); }
+
+.chip.selected {
+  border-color: var(--gold-deep);
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  color: #5a3a12;
+  box-shadow: 0 6px 14px rgba(244, 163, 0, 0.25);
+}
+
+.chip-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: inline-block;
+}
+
+.customizer .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.day-info {
+  margin-top: 28px;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  background: rgba(255, 213, 79, 0.15);
+  border-radius: 16px;
+  padding: 14px 18px;
+  line-height: 1.5;
+}
+
+.hidden-canvas { display: none; }
+
+/* ---------- lluvia de pétalos (agitar el celular / mover el cursor) ---------- */
+
+.petal-rain-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.falling-petal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 2px 3px rgba(120, 80, 50, 0.18));
+}
+
+/* ---------- destello de chispas al abrir la tarjeta ---------- */
+
+.sparkle-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: var(--gold);
+  clip-path: polygon(50% 0%, 61% 35%, 100% 50%, 61% 65%, 50% 100%, 39% 65%, 0% 50%, 39% 35%);
+  box-shadow: 0 0 8px rgba(255, 213, 79, 0.9);
+  transform: translate(-50%, -50%) scale(0);
+  animation: sparkle-fly 900ms ease-out forwards;
+}
+
+@keyframes sparkle-fly {
+  0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+  55% { transform: translate(calc(-50% + var(--dx) * 0.7), calc(-50% + var(--dy) * 0.7)) scale(1) rotate(180deg); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.3) rotate(320deg); opacity: 0; }
+}
+
+/* ---------- aviso de "te recordamos" ---------- */
+
+.remembered-hint {
+  font-size: 0.85rem;
+  color: var(--gold-deep);
+  margin: -8px 0 18px;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 480px) {
+  .welcome-card { padding: 36px 22px; }
+  .customizer { padding: 22px 16px; }
+  .bouquet-scene { padding: 34px 14px 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vintage-card,
+  .card-hint,
+  .bg-decor span,
+  .explosion-flower-sway,
+  .bouquet-container.swaying,
+  .bouquet-svg > svg {
+    animation: none !important;
+  }
+}
